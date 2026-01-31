@@ -8,7 +8,7 @@ Drag `sonic.asm` into `Unsplitter.exe`. After the process is done, a `sonic.asm.
 ## Ignore
 If an `Unsplitter_ignore.txt` is found in the same path, it will be used as a list of files and folders to ignore.
 
-Here's an example for the Sgithub.com/sonicretro/s1disasm, which will effectively exclude everything from the unsplitting process except the files in _incObj and _inc:
+Here's an example for the [Sonic 1 GitHub disassembly](https://github.com/sonicretro/s1disasm), which will effectively exclude everything from the unsplitting process except the files in _incObj and _inc:
 
 ```
 _anim\
