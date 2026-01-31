@@ -1,0 +1,11 @@
+; Use this file to define files or folders to exclude in the unsplitting process.
+; Lines prefixed by semicolons are ignored.
+_anim\
+_maps\
+sound\
+s1.sounddriver.asm
+s1.sounddriver.ram.asm
+Variables.asm
+Macros.asm
+MacroSetup.asm
+Constants.asm
