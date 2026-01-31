@@ -5,7 +5,6 @@ import (
 	"io"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 )
 
@@ -59,18 +58,21 @@ func cleanLine(s string) string {
 }
 
 func loadIgnoreList(rootFile string) {
-    data, err := os.ReadFile("Unsplitter_ignore.txt")
-    if err != nil {
-        return
-    }
+	data, err := os.ReadFile("Unsplitter_ignore.txt")
+	if err != nil {
+		return
+	}
 
-    lines := splitLines(string(data))
-    for _, l := range lines {
-        l = strings.TrimSpace(l)
-        if l != "" {
-            ignorePrefixes = append(ignorePrefixes, l)
-        }
-    }
+	lines := splitLines(string(data))
+	for _, l := range lines {
+		l = strings.TrimSpace(l)
+		if l != "" && !strings.HasPrefix(l, ";") {
+			l = strings.ReplaceAll(l, "\\", "/")	
+			ignorePrefixes = append(ignorePrefixes, l)
+			l = strings.ReplaceAll(l, "/", "\\")	
+			ignorePrefixes = append(ignorePrefixes, l)
+		}
+	}
 }
 
 // --- core processing ---
@@ -81,10 +83,8 @@ func processFile(path string, log *bufio.Writer) ([]string, error) {
 		return nil, err
 	}
 
-	fmt.Fprint(log, path+" opened")
-
 	origLines := splitLines(string(data))
-	fmt.Fprintln(log, " -->", len(origLines), "lines in included")
+	fmt.Fprintln(log, path, "opened", "-->", len(origLines), "lines in included")
 
 	out := make([]string, 0, len(origLines))
 
@@ -117,15 +117,15 @@ func processFile(path string, log *bufio.Writer) ([]string, error) {
 		// ignore based on prefix match
 		ignore := false
 		for _, p := range ignorePrefixes {
-		    if strings.HasPrefix(incName, p) {
-			fmt.Fprintln(log, incName+" ignored")
-			out = append(out, line) // keep original include line
-			ignore = true
-			break
-		    }
+			if strings.HasPrefix(incName, p) {
+				fmt.Fprintln(log, incName+" ignored")
+				out = append(out, line) // keep original include line
+				ignore = true
+				break
+			}
 		}
 		if ignore {
-		    continue
+			continue
 		}
 
 
@@ -134,17 +134,16 @@ func processFile(path string, log *bufio.Writer) ([]string, error) {
 		out = append(out, "; "+line)
 
 		if copyLabel != "" {
-		    out = append(out, copyLabel+":")
+			out = append(out, copyLabel+":")
 		}
 
 		incLines, err := processFile(incName, log)
 		if err != nil {
-		    out = append(out, line) // fallback
-		    continue
+			out = append(out, line) // fallback
+			continue
 		}
 
 		out = append(out, incLines...)
-
 	}
 
 	return out, nil
@@ -199,8 +198,8 @@ func main() {
 	}
 
 	fmt.Fprintln(log, len(finalLines), "lines written")
-	fmt.Println("\nUnsplitting done! Output:", filepath.Base(outPath))
+	//fmt.Println("Unsplitting done!", len(finalLines), "lines written.", "Output:", filepath.Base(outPath))
 
-	fmt.Println("\nPress Enter to exit...")
-	os.Stdin.Read(make([]byte, 1))
+	//fmt.Println("\nPress Enter to exit...")
+	//os.Stdin.Read(make([]byte, 1))
 }
