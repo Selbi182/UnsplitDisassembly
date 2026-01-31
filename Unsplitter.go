@@ -5,7 +5,9 @@ import (
 	"io"
 	"fmt"
 	"os"
+	"time"
 	"strings"
+	"path/filepath"
 )
 
 // --- helpers ---
@@ -49,8 +51,8 @@ func explode(str, delim string, n int) string {
 func cleanLine(s string) string {
 	s = explode(s, ";", 0)              // strip comments
 	s = strings.ReplaceAll(s, ":", " ") // colons -> spaces
-	s = strings.ReplaceAll(s, "\t", " ")
-	s = strings.ReplaceAll(s, "'", "\"")
+	s = strings.ReplaceAll(s, "\t", " ") // unify tabs
+	//s = strings.ReplaceAll(s, "'", "\"") // replace apostrophes
 	for strings.Contains(s, "  ") {
 		s = strings.ReplaceAll(s, "  ", " ")
 	}
@@ -84,7 +86,7 @@ func processFile(path string, log *bufio.Writer) ([]string, error) {
 	}
 
 	origLines := splitLines(string(data))
-	fmt.Fprintln(log, path, "opened", "-->", len(origLines), "lines in included")
+	fmt.Fprintln(log, path, "opened", "-->", len(origLines), "lines included")
 
 	out := make([]string, 0, len(origLines))
 
@@ -151,6 +153,8 @@ func processFile(path string, log *bufio.Writer) ([]string, error) {
 
 
 func main() {
+	start := time.Now() 
+
 	if len(os.Args) < 2 {
 		fmt.Println("Usage: Drop root .asm file into this tool (example: sonic.asm)")
 		fmt.Println("Ignore: You can create a file called Unsplitter_ignore.txt with a list of prefixes to ignore.")
@@ -179,7 +183,7 @@ func main() {
 		return
 	}
 	rootLines := splitLines(string(data))
-	fmt.Fprintln(log, len(rootLines), "lines in original file")
+	fmt.Fprintln(log, len(rootLines), "lines in original file\n")
 
 	// process root file (same rules as includes)
 	finalLines, err := processFile(root, log)
@@ -188,7 +192,7 @@ func main() {
 		return
 	}
 
-	outPath := root + ".unsplit.asm"
+	outPath := strings.TrimSuffix(filepath.Base(root), filepath.Ext(root)) + ".unsplit.asm"
 	_ = os.Remove(outPath)
 
 	err = os.WriteFile(outPath, []byte(joinLines(finalLines)), 0644)
@@ -197,9 +201,12 @@ func main() {
 		return
 	}
 
-	fmt.Fprintln(log, len(finalLines), "lines written")
-	//fmt.Println("Unsplitting done!", len(finalLines), "lines written.", "Output:", filepath.Base(outPath))
+	fmt.Fprintln(log, "\nTotal lines written:", len(finalLines))
+	fmt.Fprintf(log, "Unsplitting finished in: %d ms\n", time.Since(start).Milliseconds())
+	fmt.Fprintln(log, "Output:", filepath.Base(outPath))
 
-	//fmt.Println("\nPress Enter to exit...")
-	//os.Stdin.Read(make([]byte, 1))
+	// wait for stdout to finish printing before the rest
+	log.Flush()
+	fmt.Println("\nPress Enter to exit...")
+	bufio.NewReader(os.Stdin).ReadString('\n')
 }
